@@ -1,0 +1,338 @@
+/* ============================================================
+   ScreenRelay — основная тема оформления (JavaFX CSS)
+   ============================================================ */
+
+/* ── Глобальные переменные ── */
+.root {
+    -fx-font-family: "Segoe UI", "SF Pro Text", "Helvetica Neue", sans-serif;
+    -fx-font-size: 14px;
+    -fx-background-color: #1e1e2e;
+    -fx-text-fill: #cdd6f4;
+
+    /* палитра */
+    -primary: #89b4fa;
+    -primary-hover: #74c7ec;
+    -primary-pressed: #5fa8d3;
+    -danger: #f38ba8;
+    -danger-hover: #eba0ac;
+    -success: #a6e3a1;
+    -surface: #313244;
+    -surface-light: #45475a;
+    -overlay: #585b70;
+    -text: #cdd6f4;
+    -text-dim: #a6adc8;
+    -border: #45475a;
+}
+
+/* ============================================================
+   Лейауты / контейнеры
+   ============================================================ */
+
+.lobby-root,
+.broadcast-root,
+.viewer-root {
+    -fx-padding: 24;
+    -fx-spacing: 16;
+    -fx-alignment: center;
+}
+
+.card {
+    -fx-background-color: -surface;
+    -fx-background-radius: 12;
+    -fx-border-color: -border;
+    -fx-border-radius: 12;
+    -fx-padding: 20;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.35), 10, 0, 0, 4);
+}
+
+/* ============================================================
+   Типографика
+   ============================================================ */
+
+.title {
+    -fx-font-size: 28px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -primary;
+}
+
+.subtitle {
+    -fx-font-size: 16px;
+    -fx-text-fill: -text-dim;
+}
+
+.status-label {
+    -fx-font-size: 14px;
+    -fx-text-fill: -text-dim;
+}
+
+.status-label.live {
+    -fx-text-fill: -danger;
+    -fx-font-weight: bold;
+}
+
+.stats-label {
+    -fx-font-size: 13px;
+    -fx-text-fill: -text-dim;
+    -fx-font-family: "JetBrains Mono", "Consolas", monospace;
+}
+
+/* ============================================================
+   Кнопки — базовый стиль
+   ============================================================ */
+
+.button {
+    -fx-background-color: -surface-light;
+    -fx-text-fill: -text;
+    -fx-background-radius: 8;
+    -fx-border-radius: 8;
+    -fx-padding: 10 20;
+    -fx-cursor: hand;
+    -fx-font-size: 14px;
+    -fx-font-weight: bold;
+    -fx-border-color: transparent;
+}
+
+.button:hover {
+    -fx-background-color: -overlay;
+}
+
+.button:pressed {
+    -fx-background-color: -border;
+}
+
+.button:disabled {
+    -fx-opacity: 0.4;
+    -fx-cursor: default;
+}
+
+/* ── Кнопка «Транслировать» ── */
+
+.button-primary,
+.broadcast-button {
+    -fx-background-color: -primary;
+    -fx-text-fill: #1e1e2e;
+}
+
+.button-primary:hover,
+.broadcast-button:hover {
+    -fx-background-color: -primary-hover;
+}
+
+.button-primary:pressed,
+.broadcast-button:pressed {
+    -fx-background-color: -primary-pressed;
+}
+
+/* ── Кнопка «Остановить» / деструктивная ── */
+
+.button-danger,
+.stop-button {
+    -fx-background-color: -danger;
+    -fx-text-fill: #1e1e2e;
+}
+
+.button-danger:hover,
+.stop-button:hover {
+    -fx-background-color: -danger-hover;
+}
+
+/* ── Кнопка «Смотреть» / «Подключиться» ── */
+
+.button-success,
+.connect-button {
+    -fx-background-color: -success;
+    -fx-text-fill: #1e1e2e;
+}
+
+.button-success:hover,
+.connect-button:hover {
+    -fx-background-color: derive(-success, -10%);
+}
+
+/* ── Кнопка «Назад» ── */
+
+.back-button {
+    -fx-background-color: transparent;
+    -fx-text-fill: -text-dim;
+    -fx-border-color: -border;
+    -fx-border-radius: 8;
+    -fx-background-radius: 8;
+    -fx-padding: 8 16;
+}
+
+.back-button:hover {
+    -fx-background-color: -surface-light;
+    -fx-text-fill: -text;
+}
+
+/* ============================================================
+   Текстовые поля
+   ============================================================ */
+
+.text-field,
+.text-input {
+    -fx-background-color: -surface;
+    -fx-text-fill: -text;
+    -fx-prompt-text-fill: -overlay;
+    -fx-border-color: -border;
+    -fx-border-radius: 8;
+    -fx-background-radius: 8;
+    -fx-padding: 10 14;
+    -fx-font-size: 14px;
+}
+
+.text-field:focused {
+    -fx-border-color: -primary;
+    -fx-effect: dropshadow(gaussian, rgba(137,180,250,0.25), 8, 0, 0, 0);
+}
+
+/* ============================================================
+   Список обнаруженных сервисов
+   ============================================================ */
+
+.list-view {
+    -fx-background-color: -surface;
+    -fx-border-color: -border;
+    -fx-border-radius: 8;
+    -fx-background-radius: 8;
+}
+
+.list-view .list-cell {
+    -fx-background-color: transparent;
+    -fx-text-fill: -text;
+    -fx-padding: 10 14;
+    -fx-border-color: transparent transparent -border transparent;
+}
+
+.list-view .list-cell:filled:hover {
+    -fx-background-color: -surface-light;
+}
+
+.list-view .list-cell:filled:selected {
+    -fx-background-color: -primary;
+    -fx-text-fill: #1e1e2e;
+}
+
+.list-view .list-cell:empty {
+    -fx-background-color: transparent;
+}
+
+/* placeholder когда список пуст */
+.list-view .placeholder .label {
+    -fx-text-fill: -overlay;
+    -fx-font-style: italic;
+}
+
+/* ============================================================
+   ScrollPane (для viewer)
+   ============================================================ */
+
+.scroll-pane {
+    -fx-background-color: transparent;
+}
+
+.scroll-pane > .viewport {
+    -fx-background-color: #000000;
+}
+
+.scroll-bar {
+    -fx-background-color: transparent;
+}
+
+.scroll-bar .thumb {
+    -fx-background-color: -overlay;
+    -fx-background-radius: 4;
+}
+
+.scroll-bar .thumb:hover {
+    -fx-background-color: -text-dim;
+}
+
+.scroll-bar .increment-button,
+.scroll-bar .decrement-button {
+    -fx-background-color: transparent;
+    -fx-padding: 0;
+}
+
+.scroll-bar .increment-arrow,
+.scroll-bar .decrement-arrow {
+    -fx-shape: "";
+    -fx-padding: 0;
+}
+
+/* ============================================================
+   Viewer — область видео
+   ============================================================ */
+
+.video-container {
+    -fx-background-color: #000000;
+    -fx-border-color: -border;
+    -fx-border-radius: 4;
+}
+
+/* ============================================================
+   Разделитель
+   ============================================================ */
+
+.separator .line {
+    -fx-border-color: -border;
+    -fx-border-width: 0 0 1 0;
+}
+
+/* ============================================================
+   Tooltip
+   ============================================================ */
+
+.tooltip {
+    -fx-background-color: -surface;
+    -fx-text-fill: -text;
+    -fx-border-color: -border;
+    -fx-border-radius: 6;
+    -fx-background-radius: 6;
+    -fx-padding: 6 10;
+    -fx-font-size: 12px;
+}
+
+/* ============================================================
+   Индикатор загрузки / ProgressIndicator
+   ============================================================ */
+
+.progress-indicator .indicator {
+    -fx-border-color: -primary;
+}
+
+.progress-indicator:indeterminate .spinner {
+    -fx-border-color: -primary;
+}
+
+/* ============================================================
+   Лейбл «LIVE» — индикатор трансляции
+   ============================================================ */
+
+.live-indicator {
+    -fx-background-color: -danger;
+    -fx-text-fill: white;
+    -fx-font-size: 12px;
+    -fx-font-weight: bold;
+    -fx-padding: 4 12;
+    -fx-background-radius: 12;
+}
+
+/* ============================================================
+   Нижний бар со статистикой
+   ============================================================ */
+
+.status-bar {
+    -fx-background-color: -surface;
+    -fx-border-color: -border transparent transparent transparent;
+    -fx-padding: 8 16;
+    -fx-spacing: 12;
+}
+
+/* ============================================================
+   Анимация пульсации для LIVE-индикатора (через pseudo-class)
+   ============================================================ */
+
+.live-indicator:showing {
+    -fx-opacity: 1.0;
+}

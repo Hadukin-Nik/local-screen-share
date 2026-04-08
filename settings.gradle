@@ -1,0 +1,6 @@
+rootProject.name = 'LocalScreenShare3'
+include 'core'
+include 'desktop'
+include 'codec'
+include 'integration-tests'
+
