@@ -6,11 +6,11 @@ import java.io.IOException;
 public class H264Codec implements AutoCloseable {
 
     private final ScreenCaptureEncoder encoder;
-    private final H264VideoDecoder decoder;
+    private final StreamDecoder decoder;
 
     public H264Codec(int fps, int width, int height) throws IOException {
-        this.encoder = new ScreenCaptureEncoder(fps, width, height);
-        this.decoder = new H264VideoDecoder(width, height);
+        this.encoder = new ScreenCaptureEncoder(fps, width, height, null);
+        this.decoder = new StreamDecoder(width, height);
     }
 
     public byte[] encode(BufferedImage image) {

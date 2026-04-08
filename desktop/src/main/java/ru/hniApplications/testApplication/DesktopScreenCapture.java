@@ -20,9 +20,6 @@ public class DesktopScreenCapture implements ScreenCapture {
     private final AtomicBoolean capturing = new AtomicBoolean(false);
     private final AtomicReference<Thread> captureThread = new AtomicReference<>();
 
-    
-
-    
     public DesktopScreenCapture() throws CaptureException {
         try {
             this.robot = new Robot();

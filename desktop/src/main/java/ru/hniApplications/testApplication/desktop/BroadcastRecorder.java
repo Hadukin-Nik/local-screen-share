@@ -9,8 +9,8 @@ import java.time.format.DateTimeFormatter;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
- * Записывает все отправляемые NAL unit'ы в сырой .h264 файл.
- * После вызова stopAndSave() — конвертирует через FFmpeg в .mp4.
+ * Записывает MPEG-TS поток (видео + аудио) в файл.
+ * После остановки — ремуксит в .mp4.
  */
 public class BroadcastRecorder {
 
@@ -18,20 +18,16 @@ public class BroadcastRecorder {
     private final Path outputDir;
     private Path rawFile;
     private OutputStream rawStream;
-    private int fps;
 
-    /**
-     * @param outputDir папка, куда сохранять записи
-     * @param fps       FPS трансляции (нужен для правильного ремукса)
-     */
-    public BroadcastRecorder(Path outputDir, int fps) {
+    public BroadcastRecorder(Path outputDir) {
         this.outputDir = outputDir;
-        this.fps = fps;
     }
 
-    /**
-     * Начинает запись. Создаёт .h264 файл с текущей датой в имени.
-     */
+    // Обратная совместимость
+    public BroadcastRecorder(Path outputDir, int fps) {
+        this(outputDir);
+    }
+
     public void startRecording() throws IOException {
         if (recording.getAndSet(true)) return;
 
@@ -47,8 +43,7 @@ public class BroadcastRecorder {
     }
 
     /**
-     * Записывает пакет. Вызывается из потока отправки.
-     * Пишем только NAL unit'ы видеокадров (SPS, PPS, I-frame, P-frame).
+     * Записывает MPEG-TS чанк. Вызывается из потока отправки/получения.
      */
     public void writePacket(FramePacket packet) {
         if (!recording.get() || rawStream == null) return;
@@ -61,16 +56,9 @@ public class BroadcastRecorder {
         }
     }
 
-    /**
-     * Останавливает запись, закрывает .h264 файл и запускает конвертацию в .mp4.
-     * Конвертация идёт в фоновом потоке, callback вызывается по завершении.
-     *
-     * @param onComplete вызывается с путём к .mp4 файлу (или null при ошибке)
-     */
     public void stopAndSave(RecordingCompleteCallback onComplete) {
         if (!recording.getAndSet(false)) return;
 
-        // Закрываем поток
         try {
             if (rawStream != null) {
                 rawStream.flush();
@@ -86,7 +74,6 @@ public class BroadcastRecorder {
             return;
         }
 
-        // Проверяем размер
         try {
             long size = Files.size(rawFile);
             System.out.println("[Recorder] Сырой файл: " + rawFile
@@ -97,11 +84,8 @@ public class BroadcastRecorder {
                 if (onComplete != null) onComplete.onComplete(null);
                 return;
             }
-        } catch (IOException e) {
-            // ignore
-        }
+        } catch (IOException ignored) {}
 
-        // Конвертация в фоне
         Thread convertThread = new Thread(() -> {
             Path mp4File = convertToMp4(rawFile);
             if (onComplete != null) onComplete.onComplete(mp4File);
@@ -110,23 +94,22 @@ public class BroadcastRecorder {
         convertThread.start();
     }
 
-    private Path convertToMp4(Path rawFile) {
-        // Переименуем расширение для ясности, но это не обязательно
+    private Path convertToMp4(Path tsFile) {
         Path mp4File = outputDir.resolve(
-                rawFile.getFileName().toString()
-                        .replace(".h264", ".mp4")
-                        .replace(".ts", ".mp4"));
+                tsFile.getFileName().toString().replace(".ts", ".mp4"));
 
         try {
-            System.out.println("[Recorder] Конвертация: " + rawFile + " -> " + mp4File);
+            System.out.println("[Recorder] Конвертация: " + tsFile + " -> " + mp4File);
 
             ProcessBuilder pb = new ProcessBuilder(
                     "ffmpeg",
                     "-hide_banner",
                     "-y",
-                    "-f", "mpegts",           // <--- вот ключевое изменение
-                    "-i", rawFile.toAbsolutePath().toString(),
+                    "-f", "mpegts",
+                    "-i", tsFile.toAbsolutePath().toString(),
                     "-c:v", "copy",
+                    "-c:a", "aac",           // перекодируем аудио для совместимости
+                    "-b:a", "128k",
                     "-movflags", "+faststart",
                     mp4File.toAbsolutePath().toString()
             );
@@ -147,10 +130,11 @@ public class BroadcastRecorder {
             if (exitCode == 0 && Files.exists(mp4File) && Files.size(mp4File) > 0) {
                 System.out.println("[Recorder] Сохранено: " + mp4File
                         + " (" + (Files.size(mp4File) / 1024) + " КБ)");
-                Files.deleteIfExists(rawFile);
+                Files.deleteIfExists(tsFile);
                 return mp4File;
             } else {
-                System.err.println("[Recorder] FFmpeg завершился с кодом " + exitCode);
+                System.err.println("[Recorder] FFmpeg завершился с кодом "
+                        + exitCode);
                 return null;
             }
 
@@ -164,14 +148,8 @@ public class BroadcastRecorder {
         return recording.get();
     }
 
-    /**
-     * Callback по завершении конвертации.
-     */
     @FunctionalInterface
     public interface RecordingCompleteCallback {
-        /**
-         * @param mp4Path путь к готовому .mp4 файлу, или null при ошибке
-         */
         void onComplete(Path mp4Path);
     }
 }

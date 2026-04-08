@@ -4,7 +4,7 @@ import javafx.scene.image.PixelWriter;
 import javafx.scene.image.WritableImage;
 
 import ru.hniApplications.testApplication.FramePacket;
-import ru.hniApplications.testApplication.H264VideoDecoder;
+import ru.hniApplications.testApplication.StreamDecoder;
 import ru.hniApplications.testApplication.net.ConnectionListener;
 import ru.hniApplications.testApplication.net.FrameListener;
 import ru.hniApplications.testApplication.net.RelayClient;
@@ -22,7 +22,7 @@ public class ViewerManager {
     private final Consumer<WritableImage> frameCallback;
 
     private RelayClient client;
-    private H264VideoDecoder decoder;
+    private StreamDecoder decoder;
     private Thread renderThread;
     private final AtomicBoolean running = new AtomicBoolean(false);
 
@@ -40,7 +40,7 @@ public class ViewerManager {
     public void start() throws Exception {
         running.set(true);
 
-        decoder = new H264VideoDecoder(width, height);
+        decoder = new StreamDecoder(width, height);
 
         
         client = new RelayClient(host, port,
