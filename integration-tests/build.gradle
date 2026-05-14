@@ -1,0 +1,20 @@
+plugins {
+    id 'java'
+}
+
+dependencies {
+    // Зависимости от внутренних модулей для интеграционных тестов
+    implementation project(':core')
+    implementation project(':codec')
+    implementation project(':desktop')
+
+    // Netty
+    implementation 'io.netty:netty-all:4.1.100.Final'
+
+    testImplementation platform('org.junit:junit-bom:5.10.0')
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+}
+
+test {
+    useJUnitPlatform()
+}
