@@ -2,19 +2,30 @@ plugins {
     id 'java'
 }
 
+group = 'ru.hniApplications.testApplication'
+version = '1.0-SNAPSHOT'
+
+repositories {
+    mavenCentral()
+}
+
 dependencies {
-    // Зависимости от внутренних модулей для интеграционных тестов
-    implementation project(':core')
-    implementation project(':codec')
-    implementation project(':desktop')
-
-    // Netty
-    implementation 'io.netty:netty-all:4.1.100.Final'
-
+    testImplementation project(':core')
+    testImplementation project(':desktop')
+    testImplementation project(':codec')
+    implementation 'org.bytedeco:ffmpeg-platform:6.1.1-1.5.10'
+    implementation 'org.bytedeco:javacv-platform:1.5.10'
     testImplementation platform('org.junit:junit-bom:5.10.0')
     testImplementation 'org.junit.jupiter:junit-jupiter'
 }
 
 test {
     useJUnitPlatform()
+    // Сквозной тест тяжёлый — даём ему больше памяти и времени
+    jvmArgs '-Xmx1g'
+    // Не запускаем параллельно с другими модулями
+    forkEvery = 1
+}
+tasks.withType(JavaCompile) {
+    options.encoding = 'UTF-8'
 }

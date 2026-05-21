@@ -2,15 +2,21 @@ plugins {
     id 'java'
 }
 
-dependencies {
-    // Netty для сетевого взаимодействия
-    implementation 'io.netty:netty-all:4.1.100.Final'
+group = 'ru.hniApplications.testApplication'
+version = '1.0-SNAPSHOT'
 
-    // JmDNS для mDNS обнаружения сервисов
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation 'io.netty:netty-all:4.1.108.Final'
     implementation 'org.jmdns:jmdns:3.5.9'
 
     testImplementation platform('org.junit:junit-bom:5.10.0')
     testImplementation 'org.junit.jupiter:junit-jupiter'
+
+    testImplementation 'org.awaitility:awaitility:4.2.1'
 }
 
 test {

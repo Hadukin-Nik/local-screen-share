@@ -86,79 +86,65 @@ public class MainController {
     }
 
     // ════════════════════════════════════════════════════════
-    //  Трансляция
+    //  Трансляция (ОБНОВЛЕННЫЙ МЕТОД: добавлен параметр quality)
     // ════════════════════════════════════════════════════════
 
-    public void startBroadcast(String name, int port, int fps) {
-        // 1. Показываем индикатор загрузки на главном экране (чтобы не вешать UI)
+    public void startBroadcast(String name, int port, int fps, ru.hniApplications.testApplication.StreamQuality quality) {
         ProgressIndicator spinner = new ProgressIndicator();
         Label loadingLabel = new Label("Поиск аудиоустройств...");
         loadingLabel.setStyle("-fx-font-size: 14px; -fx-text-fill: white;");
 
         VBox loadingBox = new VBox(15, spinner, loadingLabel);
         loadingBox.setAlignment(Pos.CENTER);
-        loadingBox.setStyle("-fx-background-color: #1a1a2e;"); // Под цвет вашей темы
+        loadingBox.setStyle("-fx-background-color: #1a1a2e;");
 
-        // Временно ставим загрузочный экран
         root.getChildren().setAll(loadingBox);
 
-        // 2. Асинхронно ищем устройства в фоновом потоке
         CompletableFuture.supplyAsync(ScreenCaptureEncoder::listAllAudioDevices)
                 .thenAccept(devices -> Platform.runLater(() -> {
-                    // 3. Когда список готов, создаем и показываем диалог (в UI-потоке)
                     AudioDeviceChooserDialog dialog = new AudioDeviceChooserDialog(devices);
                     dialog.initOwner(root.getScene().getWindow());
 
-                    // Ждем выбора пользователя
                     Optional<ScreenCaptureEncoder.AudioDevice> result = dialog.showAndWait();
 
                     if (result.isPresent()) {
-                        // КОРИДОР УСПЕХА: устройство выбрано, продолжаем запуск
                         try {
                             broadcastManager = new BroadcastManager(name, port, fps);
 
-                            // Передаем выбранное устройство
+                            // ПРИМЕНЯЕМ ВЫБРАННОЕ КАЧЕСТВО ТРАНСЛЯЦИИ
+                            broadcastManager.setVideoBitrate(quality != null ? quality.getBitrate() : "2000k");
+
                             broadcastManager.setAudioDevice(result.get());
 
-                            // Привязываем слушатель громкости звука к UI-бару
                             broadcastManager.setAudioLevelListener(level -> {
                                 Platform.runLater(() -> {
                                     broadcastView.updateAudioLevel(level);
                                 });
                             });
-                            // Запуск самого стрима и захвата
+
                             broadcastManager.start();
 
                             state = AppState.BROADCASTING;
 
-                            // Устанавливаем и показываем интерфейс трансляции
                             broadcastView.setTitle(name);
                             root.getChildren().setAll(broadcastView);
 
-                            // Запускаем превью
                             broadcastView.startPreview();
                             startBroadcastStatsUpdater();
 
                         } catch (Exception e) {
                             showError("Ошибка запуска трансляции", e);
-                            // Возврат на экран создания трансляции (лобби/меню), если произошла ошибка
-                            // Замените lobbyView на вашу панель по умолчанию
-                            root.getChildren().setAll((Collection<? extends Node>) lobbyView);
+                            root.getChildren().setAll((Collection<? extends Node>) lobbyView.getView());
                         }
                     } else {
-                        // ОТМЕНА: пользователь закрыл диалог
                         System.out.println("Запуск отменен: аудиоустройство не выбрано.");
-                        // Возвращаем стартовый экран
-                        // Замените lobbyView на панель, откуда была нажата кнопка "Начать трансляцию"
-                        root.getChildren().setAll((Collection<? extends Node>) lobbyView);
+                        root.getChildren().setAll((Collection<? extends Node>) lobbyView.getView());
                     }
                 }))
                 .exceptionally(ex -> {
-                    // ОБРАБОТКА ОШИБОК ПОИСКА УСТРОЙСТВ
                     Platform.runLater(() -> {
                         showError("Ошибка поиска аудиоустройств", (Exception) ex);
-                        // Возврат в меню
-                        root.getChildren().setAll((Collection<? extends Node>) lobbyView);
+                        root.getChildren().setAll((Collection<? extends Node>) lobbyView.getView());
                     });
                     return null;
                 });

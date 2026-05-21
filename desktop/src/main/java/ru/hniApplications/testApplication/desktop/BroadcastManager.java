@@ -10,10 +10,10 @@ public class BroadcastManager {
     private final String name;
     private final int port;
     private final int fps;
+    private String videoBitrate = "2000k"; // Значение по умолчанию
 
     private DesktopStreamingPipeline pipeline;
 
-    // Храним слушатель, чтобы передать его в pipeline после создания
     private Consumer<Double> audioLevelListener;
     private AudioDevice selectedAudioDevice;
 
@@ -23,8 +23,12 @@ public class BroadcastManager {
         this.fps = fps;
     }
 
+    public void setVideoBitrate(String videoBitrate) {
+        this.videoBitrate = videoBitrate;
+    }
+
     public void setAudioLevelListener(Consumer<Double> listener) {
-        this.audioLevelListener = listener; // Сохраняем
+        this.audioLevelListener = listener;
         if (pipeline != null) {
             pipeline.setAudioLevelListener(listener);
         }
@@ -37,19 +41,19 @@ public class BroadcastManager {
     public void start() throws Exception {
         pipeline = new DesktopStreamingPipeline(port, fps);
 
-        // Передаем устройство
+        // УСТАНАВЛИВАЕМ БИТРЕЙТ ДЛЯ PIPELINE
+        pipeline.setVideoBitrate(this.videoBitrate != null ? this.videoBitrate : "2000k");
+
         if (selectedAudioDevice != null) {
             pipeline.setAudioDevice(selectedAudioDevice);
         } else {
             pipeline.detectAudioDevice();
         }
 
-        // Передаем слушатель прямо в ядро энкодера
         if (audioLevelListener != null) {
             pipeline.setAudioLevelListener(audioLevelListener);
         }
 
-        // Всю работу делает сам Pipeline
         pipeline.start();
     }
 

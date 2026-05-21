@@ -2,14 +2,26 @@ plugins {
     id 'java'
 }
 
-dependencies {
-    // Зависимость от модуля core для интерфейсов захвата
-    implementation project(':core')
+group = 'ru.hniApplications.testApplication'
+version = '1.0-SNAPSHOT'
 
-    testImplementation platform('org.junit:junit-bom:5.10.0')
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation project(':core')
+    implementation("org.jcodec:jcodec:0.2.5")
+    testImplementation platform('org.junit:junit-bom:5.10.2')
     testImplementation 'org.junit.jupiter:junit-jupiter'
+    implementation 'org.bytedeco:javacv-platform:1.5.10'
 }
 
 test {
     useJUnitPlatform()
+    jvmArgs '-Xmx512m'
+}
+
+tasks.withType(JavaCompile) {
+    options.encoding = 'UTF-8'
 }

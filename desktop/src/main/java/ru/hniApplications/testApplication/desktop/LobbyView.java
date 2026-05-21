@@ -9,6 +9,7 @@ import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 
+import ru.hniApplications.testApplication.StreamQuality;
 import ru.hniApplications.testApplication.discovery.DiscoveredService;
 
 import java.util.List;
@@ -21,6 +22,7 @@ public class LobbyView {
     private final TextField nameField;
     private final Spinner<Integer> portSpinner;
     private final Spinner<Integer> fpsSpinner;
+    private final ComboBox<StreamQuality> qualityComboBox; // НОВОЕ ПОЛЕ ДЛЯ КАЧЕСТВА
 
     private final TextField hostField;
     private final Spinner<Integer> connectPortSpinner;
@@ -29,7 +31,6 @@ public class LobbyView {
     public LobbyView(MainController controller) {
         this.controller = controller;
 
-        
         Label title = new Label("LocalScreenShare");
         title.setFont(Font.font("System", FontWeight.BOLD, 28));
         title.setTextFill(Color.WHITE);
@@ -42,7 +43,6 @@ public class LobbyView {
         header.setAlignment(Pos.CENTER);
         header.setPadding(new Insets(20, 0, 30, 0));
 
-        
         Label bcTitle = new Label("\uD83D\uDCE1  Start Broadcast");
         bcTitle.setFont(Font.font("System", FontWeight.BOLD, 16));
         bcTitle.setTextFill(Color.WHITE);
@@ -61,6 +61,13 @@ public class LobbyView {
         fpsSpinner.setPrefWidth(150);
         styleSpinner(fpsSpinner);
 
+        // НАСТРОЙКА ВЫПАДАЮЩЕГО СПИСКА КАЧЕСТВА
+        qualityComboBox = new ComboBox<>();
+        qualityComboBox.getItems().addAll(StreamQuality.values());
+        qualityComboBox.getSelectionModel().select(StreamQuality.MEDIUM); // Качество по умолчанию
+        qualityComboBox.setPrefWidth(150);
+        styleComboBox(qualityComboBox);
+
         Button startBtn = new Button("\u25B6  Start Broadcast");
         startBtn.setMaxWidth(Double.MAX_VALUE);
         startBtn.setStyle(
@@ -70,20 +77,23 @@ public class LobbyView {
         startBtn.setOnAction(e -> {
             String name = nameField.getText().trim();
             if (name.isEmpty()) name = "Screen";
-            controller.startBroadcast(name, portSpinner.getValue(), fpsSpinner.getValue());
+
+            // ВЫЗОВ ОБНОВЛЕННОГО МЕТОДА С ПЕРЕДАЧЕЙ КАЧЕСТВА
+            controller.startBroadcast(name, portSpinner.getValue(), fpsSpinner.getValue(), qualityComboBox.getValue());
         });
 
+        // ДОБАВЛЯЕМ КОМПОНЕНТ В ИНТЕРФЕЙС
         VBox broadcastCard = new VBox(12,
                 bcTitle,
                 styledLabel("Broadcast name:"), nameField,
                 styledLabel("Port (0 = auto):"), portSpinner,
                 styledLabel("FPS:"), fpsSpinner,
+                styledLabel("Video quality:"), qualityComboBox,
                 new Separator(),
                 startBtn
         );
         styleCard(broadcastCard);
 
-        
         Label viewTitle = new Label("\uD83D\uDCFA  Join");
         viewTitle.setFont(Font.font("System", FontWeight.BOLD, 16));
         viewTitle.setTextFill(Color.WHITE);
@@ -151,7 +161,6 @@ public class LobbyView {
         );
         styleCard(viewerCard);
 
-        
         HBox cards = new HBox(20, broadcastCard, viewerCard);
         cards.setAlignment(Pos.CENTER);
         HBox.setHgrow(broadcastCard, Priority.ALWAYS);
@@ -171,8 +180,6 @@ public class LobbyView {
         return root;
     }
 
-    
-
     private Label styledLabel(String text) {
         Label l = new Label(text);
         l.setTextFill(Color.web("#ccccee"));
@@ -191,6 +198,14 @@ public class LobbyView {
     private void styleSpinner(Spinner<?> sp) {
         sp.setStyle(
                 "-fx-background-color: #16213e; -fx-border-color: #0f3460; "
+                        + "-fx-border-radius: 6; -fx-background-radius: 6;");
+    }
+
+    // СТИЛИЗАТОР ДЛЯ НОВОГО ВЫПАДАЮЩЕГО СПИСКА
+    private void styleComboBox(ComboBox<?> cb) {
+        cb.setStyle(
+                "-fx-background-color: #16213e; "
+                        + "-fx-border-color: #0f3460; "
                         + "-fx-border-radius: 6; -fx-background-radius: 6;");
     }
 
