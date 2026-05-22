@@ -48,22 +48,27 @@ public class ScreenCaptureEncoder implements AutoCloseable {
                     + " ch=" + fmt.channels
                     + " bits=" + fmt.bitsPerSample
                     + " float=" + fmt.isFloat);
+// === ОБЩИЕ ОПЦИИ ===
+// Используем wallclock как PTS — критично для синхронизации двух real-time входов
+            cmd.add("-use_wallclock_as_timestamps"); cmd.add("1");
 
-// Вход 0: видео (dshow) — большой буфер, чтобы кадры не дропались,
-// пока ffmpeg ждёт аудио
-            cmd.add("-thread_queue_size"); cmd.add("1024");
-            cmd.add("-rtbufsize"); cmd.add("256M");
+// === Вход 0: видео (dshow) ===
+            cmd.add("-thread_queue_size"); cmd.add("4096");
+            cmd.add("-rtbufsize"); cmd.add("512M");
             cmd.add("-f"); cmd.add("dshow");
             cmd.add("-framerate"); cmd.add(String.valueOf(fps));
             cmd.add("-video_size"); cmd.add(width + "x" + height);
             cmd.add("-i"); cmd.add("video=screen-capture-recorder");
 
-// Вход 1: аудио (pipe:0) — тоже thread_queue, чтобы pipe не стопорил
-            cmd.add("-thread_queue_size"); cmd.add("1024");
+// === Вход 1: аудио (pipe:0) ===
+            cmd.add("-thread_queue_size"); cmd.add("4096");
             cmd.add("-f"); cmd.add(fmt.isFloat ? "f32le" : "s16le");
             cmd.add("-ar"); cmd.add(String.valueOf(fmt.sampleRate));
             cmd.add("-ac"); cmd.add(String.valueOf(fmt.channels));
             cmd.add("-i"); cmd.add("pipe:0");
+
+            cmd.add("-map"); cmd.add("0:v:0");
+            cmd.add("-map"); cmd.add("1:a:0");
 
 
             // map: video из первого входа, audio из второго
@@ -94,18 +99,14 @@ public class ScreenCaptureEncoder implements AutoCloseable {
             cmd.add("video=screen-capture-recorder");
         }
 
-        cmd.add("-c:v");
-        cmd.add("libx264");
-        cmd.add("-preset");
-        cmd.add("ultrafast");
-        cmd.add("-tune");
-        cmd.add("zerolatency");
-        cmd.add("-pix_fmt");
-        cmd.add("yuv420p");
-        cmd.add("-g");
-        cmd.add(String.valueOf(fps));
-        cmd.add("-b:v");
-        cmd.add(videoBitrate != null && !videoBitrate.isEmpty() ? videoBitrate : "2000k");
+        cmd.add("-c:v"); cmd.add("libx264");
+        cmd.add("-preset"); cmd.add("ultrafast");
+        cmd.add("-tune"); cmd.add("zerolatency");
+        cmd.add("-pix_fmt"); cmd.add("yuv420p");
+        cmd.add("-g"); cmd.add(String.valueOf(fps));
+        cmd.add("-b:v"); cmd.add(videoBitrate != null ? videoBitrate : "2000k");
+// Ограничиваем threads, чтобы encoder не съел всё:
+        cmd.add("-threads"); cmd.add("4");
 
         if (device != null) {
             cmd.add("-c:a");
