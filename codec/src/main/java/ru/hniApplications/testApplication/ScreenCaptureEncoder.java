@@ -38,12 +38,11 @@ public class ScreenCaptureEncoder implements AutoCloseable {
         cmd.add(String.valueOf(fps));
         cmd.add("-video_size");
         cmd.add(width + "x" + height);
-        error: ffmpegArg has private access in AudioDevice
-        System.out.println("[ENCODER] ������������� ����� + �����: " + device.ffmpegArg);
+
         if (device != null) {
-            System.out.println("[ENCODER] Инициализация видео + аудио: " + device.ffmpegArg);
+            System.out.println("[ENCODER] Инициализация видео + аудио: " + device.getFfmpegArg());
             cmd.add("-i");
-            cmd.add("video=screen-capture-recorder:audio=" + device.ffmpegArg);
+            cmd.add("video=screen-capture-recorder:audio=" + device.getFfmpegArg());
         } else {
             System.out.println("[ENCODER] Инициализация только видео (без звука)");
             cmd.add("-i");
