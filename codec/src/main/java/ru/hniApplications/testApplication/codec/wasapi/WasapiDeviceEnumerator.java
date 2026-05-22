@@ -62,7 +62,7 @@ public final class WasapiDeviceEnumerator {
                     // Item для каждого устройства
                     for (int i = 0; i < count.getValue(); i++) {
                         PointerByReference pDev = new PointerByReference();
-                        ComUtil.checkHr(ComUtil.callCom(pCollection.getValue(), 4, i, pDev),  // Item
+                        ComUtil.checkHr(ComUtil.callCom(pCollection, 4, i, pDev),  // Item
                                 "Item(" + i + ")");
                         Pointer pDevice = pDev.getValue();
 
