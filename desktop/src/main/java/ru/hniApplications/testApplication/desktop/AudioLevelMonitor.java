@@ -1,6 +1,7 @@
 package ru.hniApplications.testApplication.desktop;
 
-import ru.hniApplications.testApplication.ScreenCaptureEncoder.AudioDevice;
+import ru.hniApplications.testApplication.FFmpegLocator;
+import ru.hniApplications.testApplication.capture.AudioDevice;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
@@ -23,12 +24,9 @@ public class AudioLevelMonitor {
         readThread = new Thread(() -> {
             try {
                 List<String> cmd = new ArrayList<>();
-                cmd.add("ffmpeg"); cmd.add("-hide_banner"); cmd.add("-loglevel"); cmd.add("error");
-                cmd.add("-f"); cmd.add("wasapi");
-                if (device.isLoopback) {
-                    cmd.add("-loopback"); cmd.add("1");
-                }
-                cmd.add("-i"); cmd.add(device.ffmpegArg);
+                cmd.add(FFmpegLocator.getPath()); cmd.add("-hide_banner"); cmd.add("-loglevel"); cmd.add("error");
+                cmd.add("-f"); cmd.add("dshow");
+                cmd.add("-i"); cmd.add("audio=" + device.getFfmpegArg());
 
                 // Перегоняем в RAW PCM, чтобы легко посчитать "громкость" байтов математикой
                 cmd.add("-f"); cmd.add("s16le"); // 16-bit PCM

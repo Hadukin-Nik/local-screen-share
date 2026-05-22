@@ -41,7 +41,7 @@ public class StreamDecoder implements AutoCloseable {
     private void startVideoProcess() {
         try {
             ProcessBuilder pb = new ProcessBuilder(
-                    "ffmpeg",
+                    FFmpegLocator.getPath(),
                     "-hide_banner",
                     "-loglevel", "error",
                     "-f", "mpegts",
@@ -115,7 +115,7 @@ public class StreamDecoder implements AutoCloseable {
     private void startAudioProcess() {
         try {
             ProcessBuilder pb = new ProcessBuilder(
-                    "ffmpeg",
+                    FFmpegLocator.getPath(),
                     "-hide_banner",
                     "-loglevel", "error",
                     "-f", "mpegts",

@@ -4,7 +4,7 @@ import javafx.collections.FXCollections;
 import javafx.geometry.Insets;
 import javafx.scene.control.*;
 import javafx.scene.layout.VBox;
-import ru.hniApplications.testApplication.ScreenCaptureEncoder.AudioDevice;
+import ru.hniApplications.testApplication.capture.AudioDevice;
 
 import java.util.List;
 

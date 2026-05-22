@@ -13,7 +13,8 @@ import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.stage.Window;
 import javafx.util.Duration;
-import ru.hniApplications.testApplication.ScreenCaptureEncoder;
+import ru.hniApplications.testApplication.capture.AudioDevice;
+import ru.hniApplications.testApplication.codec.AudioDeviceEnumerator;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -100,12 +101,12 @@ public class MainController {
 
         root.getChildren().setAll(loadingBox);
 
-        CompletableFuture.supplyAsync(ScreenCaptureEncoder::listAllAudioDevices)
+        CompletableFuture.supplyAsync(AudioDeviceEnumerator::list)
                 .thenAccept(devices -> Platform.runLater(() -> {
                     AudioDeviceChooserDialog dialog = new AudioDeviceChooserDialog(devices);
                     dialog.initOwner(root.getScene().getWindow());
 
-                    Optional<ScreenCaptureEncoder.AudioDevice> result = dialog.showAndWait();
+                    Optional<AudioDevice> result = dialog.showAndWait();
 
                     if (result.isPresent()) {
                         try {

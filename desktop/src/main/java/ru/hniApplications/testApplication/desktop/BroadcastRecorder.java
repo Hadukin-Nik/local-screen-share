@@ -1,5 +1,6 @@
 package ru.hniApplications.testApplication.desktop;
 
+import ru.hniApplications.testApplication.FFmpegLocator;
 import ru.hniApplications.testApplication.FramePacket;
 
 import java.io.*;
@@ -102,7 +103,7 @@ public class BroadcastRecorder {
             System.out.println("[Recorder] Конвертация: " + tsFile + " -> " + mp4File);
 
             ProcessBuilder pb = new ProcessBuilder(
-                    "ffmpeg",
+                    FFmpegLocator.getPath(),
                     "-hide_banner",
                     "-y",
                     "-f", "mpegts",

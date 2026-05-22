@@ -1,6 +1,6 @@
 package ru.hniApplications.testApplication.desktop;
 
-import ru.hniApplications.testApplication.ScreenCaptureEncoder.AudioDevice;
+import ru.hniApplications.testApplication.capture.AudioDevice;
 
 import java.io.IOException;
 import java.nio.file.Path;

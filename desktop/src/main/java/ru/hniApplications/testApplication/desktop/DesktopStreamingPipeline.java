@@ -3,7 +3,8 @@ package ru.hniApplications.testApplication.desktop;
 import ru.hniApplications.testApplication.FramePacket;
 import ru.hniApplications.testApplication.FrameType;
 import ru.hniApplications.testApplication.ScreenCaptureEncoder;
-import ru.hniApplications.testApplication.ScreenCaptureEncoder.AudioDevice;
+import ru.hniApplications.testApplication.capture.AudioDevice;
+import ru.hniApplications.testApplication.codec.AudioDeviceEnumerator;
 import ru.hniApplications.testApplication.net.RelayServer;
 
 import java.awt.Dimension;
@@ -51,11 +52,11 @@ public class DesktopStreamingPipeline {
     }
 
     public void detectAudioDevice() {
-        this.audioDevice = ScreenCaptureEncoder.listAllAudioDevices().getFirst();
+        this.audioDevice = AudioDeviceEnumerator.list().getFirst();
     }
 
     public static List<AudioDevice> getAvailableAudioDevices() {
-        return ScreenCaptureEncoder.listAllAudioDevices();
+        return AudioDeviceEnumerator.list();
     }
 
     public void setAudioDevice(AudioDevice device) {

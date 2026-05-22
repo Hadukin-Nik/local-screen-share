@@ -1,5 +1,7 @@
 package ru.hniApplications.testApplication;
 
+import ru.hniApplications.testApplication.capture.AudioDevice;
+
 import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
@@ -25,7 +27,7 @@ public class ScreenCaptureEncoder implements AutoCloseable {
     public ScreenCaptureEncoder(int fps, int width, int height, AudioDevice device, String videoBitrate) throws IOException {
         List<String> cmd = new ArrayList<>();
 
-        cmd.add("C:\\Users\\husan\\Downloads\\ffmpeg-master-latest-win64-gpl\\bin\\ffmpeg.exe");
+        cmd.add(FFmpegLocator.getPath());
         cmd.add("-hide_banner");
         cmd.add("-loglevel");
         cmd.add("warning");
@@ -113,71 +115,5 @@ public class ScreenCaptureEncoder implements AutoCloseable {
     @Override
     public void close() {
         process.destroyForcibly();
-    }
-
-    public static class AudioDevice {
-        public final String displayName;
-        public final String ffmpegArg;
-        public final boolean isLoopback;
-
-        public AudioDevice(String displayName, String ffmpegArg, boolean isLoopback) {
-            this.displayName = displayName;
-            this.ffmpegArg = ffmpegArg;
-            this.isLoopback = isLoopback;
-        }
-
-        @Override
-        public String toString() {
-            return displayName;
-        }
-    }
-
-    public static List<AudioDevice> listAllAudioDevices() {
-        List<AudioDevice> list = new ArrayList<>();
-        String ffmpegPath = "C:\\Users\\husan\\Downloads\\ffmpeg-master-latest-win64-gpl\\bin\\ffmpeg.exe";
-
-        try {
-            ProcessBuilder pb = new ProcessBuilder(
-                    ffmpegPath, "-list_devices", "true", "-f", "dshow", "-i", "dummy"
-            );
-            pb.redirectErrorStream(true);
-            Process process = pb.start();
-
-            try (java.io.BufferedReader br = new java.io.BufferedReader(
-                    new java.io.InputStreamReader(process.getInputStream(), "UTF-8"))) {
-
-                String line;
-                String currentAudioName = null;
-
-                while ((line = br.readLine()) != null) {
-                    if (line.contains("(audio)")) {
-                        int startQuote = line.indexOf('"');
-                        int endQuote = line.indexOf('"', startQuote + 1);
-                        if (startQuote != -1 && endQuote > startQuote) {
-                            currentAudioName = line.substring(startQuote + 1, endQuote);
-
-                            if (currentAudioName.equals("virtual-audio-capturer")) {
-                                list.add(new AudioDevice("Системный звук (Virtual Capturer)", currentAudioName, false));
-                                currentAudioName = null;
-                            }
-                        }
-                    } else if (line.contains("Alternative name") && currentAudioName != null) {
-                        int startQuote = line.indexOf('"');
-                        int endQuote = line.lastIndexOf('"');
-                        if (startQuote != -1 && endQuote > startQuote) {
-                            String altName = line.substring(startQuote + 1, endQuote);
-                            list.add(new AudioDevice(currentAudioName, altName, false));
-                            currentAudioName = null;
-                        }
-                    } else if (line.contains("(video)")) {
-                        currentAudioName = null;
-                    }
-                }
-            }
-            process.waitFor();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        return list;
     }
 }
