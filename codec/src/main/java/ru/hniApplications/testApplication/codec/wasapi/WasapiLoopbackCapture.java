@@ -2,6 +2,7 @@ package ru.hniApplications.testApplication.codec.wasapi;
 
 import com.sun.jna.Pointer;
 import com.sun.jna.platform.win32.Ole32;
+import com.sun.jna.platform.win32.WinDef;
 import com.sun.jna.platform.win32.WinNT;
 import com.sun.jna.ptr.IntByReference;
 import com.sun.jna.ptr.PointerByReference;
@@ -144,8 +145,7 @@ public class WasapiLoopbackCapture implements AutoCloseable {
                 // GetDevice(deviceId) — передаём как LPCWSTR (Pointer)
                 PointerByReference pDev = new PointerByReference();
                 // Создаём LPCWSTR из Java String
-                com.sun.jna.platform.win32.WinNT.LPWSTR lpDeviceId = 
-                        new com.sun.jna.platform.win32.WinNT.LPWSTR(deviceId);
+                WinDef.LPWSTR lpDeviceId = new WinDef.LPWSTR(deviceId);
                 // IMMDeviceEnumerator::GetDevice — vtable index 5
                 int rc = ComUtil.callCom(pEnum, 5, lpDeviceId, pDev);
                 ComUtil.checkHr(rc, "GetDevice(" + deviceId + ")");
