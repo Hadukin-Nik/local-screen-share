@@ -120,10 +120,41 @@ public class WasapiLoopbackCapture implements AutoCloseable {
             pMixFormatRaw = pFormat.getValue();
 
             WaveFormatEx mixFormat = new WaveFormatEx(pMixFormatRaw);
-            boolean isFloat = (mixFormat.wFormatTag == WasapiConstants.WAVE_FORMAT_IEEE_FLOAT) ||
-                    (mixFormat.wFormatTag == WasapiConstants.WAVE_FORMAT_EXTENSIBLE && mixFormat.cbSize >= 22);
             int bitsPerSample = mixFormat.wBitsPerSample;
             if (bitsPerSample == 0) bitsPerSample = 32;
+
+// Правильное определение float vs PCM:
+// - WAVE_FORMAT_IEEE_FLOAT (0x0003) — явно float
+// - WAVE_FORMAT_PCM (0x0001) — явно PCM
+// - WAVE_FORMAT_EXTENSIBLE (0xFFFE) — нужно смотреть SubFormat,
+//   но на практике WASAPI shared mix format на современных Windows
+//   ВСЕГДА float32 при 32-битной глубине.
+            boolean isFloat;
+            if (mixFormat.wFormatTag == WasapiConstants.WAVE_FORMAT_IEEE_FLOAT) {
+                isFloat = true;
+            } else if (mixFormat.wFormatTag == WasapiConstants.WAVE_FORMAT_PCM) {
+                isFloat = false;
+            } else if (mixFormat.wFormatTag == WasapiConstants.WAVE_FORMAT_EXTENSIBLE) {
+                // Читаем SubFormat GUID из WAVEFORMATEXTENSIBLE.
+                // Layout: WAVEFORMATEX (18 байт) + Samples (2) + dwChannelMask (4) + SubFormat (16)
+                // Смещение SubFormat от начала структуры = 18 + 2 + 4 = 24
+                Pointer raw = pMixFormatRaw;
+                // Первые 4 байта SubFormat = Data1 поля GUID
+                int subFormatData1 = raw.getInt(24);
+                // KSDATAFORMAT_SUBTYPE_IEEE_FLOAT начинается с 0x00000003
+                // KSDATAFORMAT_SUBTYPE_PCM        начинается с 0x00000001
+                if (subFormatData1 == 0x00000003) {
+                    isFloat = true;
+                } else if (subFormatData1 == 0x00000001) {
+                    isFloat = false;
+                } else {
+                    // Fallback: при 32 битах в WASAPI shared практически всегда float
+                    isFloat = (bitsPerSample == 32);
+                }
+            } else {
+                // Неизвестный формат — предполагаем float для 32 бит
+                isFloat = (bitsPerSample == 32);
+            }
 
             int blockAlign = mixFormat.nBlockAlign;
             if (blockAlign == 0) blockAlign = mixFormat.nChannels * bitsPerSample / 8;
