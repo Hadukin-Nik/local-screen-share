@@ -12,6 +12,7 @@ repositories {
 dependencies {
     implementation project(':core')
     implementation("org.jcodec:jcodec:0.2.5")
+    implementation 'net.java.dev.jna:jna-platform:5.14.0'
     testImplementation platform('org.junit:junit-bom:5.10.2')
     testImplementation 'org.junit.jupiter:junit-jupiter'
     implementation 'org.bytedeco:javacv-platform:1.5.10'

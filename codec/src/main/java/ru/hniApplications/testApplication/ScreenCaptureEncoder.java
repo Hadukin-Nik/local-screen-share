@@ -1,6 +1,7 @@
 package ru.hniApplications.testApplication;
 
 import ru.hniApplications.testApplication.capture.AudioDevice;
+import ru.hniApplications.testApplication.codec.wasapi.WasapiLoopbackCapture;
 
 import java.io.*;
 import java.util.ArrayList;
@@ -9,7 +10,8 @@ import java.util.List;
 public class ScreenCaptureEncoder implements AutoCloseable {
     private final Process process;
     private final InputStream ffmpegOutput;
-    private final OutputStream ffmpegInput = new ByteArrayOutputStream();
+    private final WasapiLoopbackCapture wasapiCapture;
+    private Thread pipeCopyThread;
 
     public ScreenCaptureEncoder(int fps, int width, int height) throws IOException {
         this(fps, width, height, null, "2000k");
@@ -32,19 +34,58 @@ public class ScreenCaptureEncoder implements AutoCloseable {
         cmd.add("-loglevel");
         cmd.add("warning");
 
-        cmd.add("-f");
-        cmd.add("dshow");
-        cmd.add("-framerate");
-        cmd.add(String.valueOf(fps));
-        cmd.add("-video_size");
-        cmd.add(width + "x" + height);
+        WasapiLoopbackCapture localWasapiCapture = null;
 
-        if (device != null) {
+        // Определяем режим работы
+        if (device != null && device.isLoopback() && device.getFfmpegArg().startsWith("wasapi-loopback://")) {
+            // === Ветка WASAPI loopback ===
+            String deviceId = device.getFfmpegArg().substring("wasapi-loopback://".length());
+            localWasapiCapture = new WasapiLoopbackCapture(deviceId);
+            localWasapiCapture.start();
+            WasapiLoopbackCapture.Format fmt = localWasapiCapture.getFormat();
+
+            System.out.println("[ENCODER] WASAPI loopback: sr=" + fmt.sampleRate
+                    + " ch=" + fmt.channels
+                    + " bits=" + fmt.bitsPerSample
+                    + " float=" + fmt.isFloat);
+
+            // Собираем команду с ДВУМЯ входами: видео + pipe:0
+            // Вход 0: видео (dshow)
+            cmd.add("-f"); cmd.add("dshow");
+            cmd.add("-framerate"); cmd.add(String.valueOf(fps));
+            cmd.add("-video_size"); cmd.add(width + "x" + height);
+            cmd.add("-i"); cmd.add("video=screen-capture-recorder");
+
+            // Вход 1: аудио (pipe:0)
+            cmd.add("-f"); cmd.add(fmt.isFloat ? "f32le" : "s16le");
+            cmd.add("-ar"); cmd.add(String.valueOf(fmt.sampleRate));
+            cmd.add("-ac"); cmd.add(String.valueOf(fmt.channels));
+            cmd.add("-i"); cmd.add("pipe:0");
+
+            // map: video из первого входа, audio из второго
+            cmd.add("-map"); cmd.add("0:v:0");
+            cmd.add("-map"); cmd.add("1:a:0");
+
+        } else if (device != null) {
+            // === Старая ветка dshow (микрофон) ===
             System.out.println("[ENCODER] Инициализация видео + аудио: " + device.getFfmpegArg());
+            cmd.add("-f");
+            cmd.add("dshow");
+            cmd.add("-framerate");
+            cmd.add(String.valueOf(fps));
+            cmd.add("-video_size");
+            cmd.add(width + "x" + height);
             cmd.add("-i");
             cmd.add("video=screen-capture-recorder:audio=" + device.getFfmpegArg());
         } else {
+            // === Только видео (без звука) ===
             System.out.println("[ENCODER] Инициализация только видео (без звука)");
+            cmd.add("-f");
+            cmd.add("dshow");
+            cmd.add("-framerate");
+            cmd.add(String.valueOf(fps));
+            cmd.add("-video_size");
+            cmd.add(width + "x" + height);
             cmd.add("-i");
             cmd.add("video=screen-capture-recorder");
         }
@@ -60,7 +101,7 @@ public class ScreenCaptureEncoder implements AutoCloseable {
         cmd.add("-g");
         cmd.add(String.valueOf(fps));
         cmd.add("-b:v");
-        cmd.add(videoBitrate != null && !videoBitrate.isEmpty() ? videoBitrate : "2000k"); // ПРИМЕНЯЕМ КАЧЕСТВО СЮДА
+        cmd.add(videoBitrate != null && !videoBitrate.isEmpty() ? videoBitrate : "2000k");
 
         if (device != null) {
             cmd.add("-c:a");
@@ -85,6 +126,30 @@ public class ScreenCaptureEncoder implements AutoCloseable {
 
         this.ffmpegOutput = new BufferedInputStream(process.getInputStream(), 256 * 1024);
 
+        // Запускаем поток копирования PCM в stdin ffmpeg (только для WASAPI)
+        if (localWasapiCapture != null) {
+            final WasapiLoopbackCapture capture = localWasapiCapture;
+            final OutputStream stdin = process.getOutputStream();
+            pipeCopyThread = new Thread(() -> {
+                try (InputStream audioIn = capture.getOutputStream();
+                     BufferedOutputStream bufOut = new BufferedOutputStream(stdin, 256 * 1024)) {
+                    byte[] buffer = new byte[64 * 1024];
+                    int n;
+                    while ((n = audioIn.read(buffer)) > 0) {
+                        bufOut.write(buffer, 0, n);
+                        bufOut.flush();
+                    }
+                } catch (IOException e) {
+                    System.err.println("[ENCODER] Pipe copy thread error: " + e.getMessage());
+                }
+            }, "wasapi-pipe-copier");
+            pipeCopyThread.setDaemon(true);
+            pipeCopyThread.start();
+        }
+
+        this.wasapiCapture = localWasapiCapture;
+
+        // Поток логирования stderr
         Thread errThread = new Thread(() -> {
             try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getErrorStream()))) {
                 String line;
@@ -98,10 +163,18 @@ public class ScreenCaptureEncoder implements AutoCloseable {
         errThread.start();
     }
 
-    public OutputStream getAudioInputStream() {
-        return ffmpegInput;
+    /**
+     * @return InputStream с MPEG-TS потоком (H.264+AAC)
+     */
+    public InputStream getAudioInputStream() {
+        return ffmpegOutput;
     }
 
+    /**
+     * Читает следующий чанк из выходного потока ffmpeg.
+     *
+     * @return байтовый массив или null при EOF
+     */
     public byte[] readChunk() throws IOException {
         byte[] buf = new byte[16 * 1024];
         int read = ffmpegOutput.read(buf);
@@ -114,6 +187,21 @@ public class ScreenCaptureEncoder implements AutoCloseable {
 
     @Override
     public void close() {
+        // Сначала останавливаем WASAPI захват (если есть)
+        if (wasapiCapture != null) {
+            wasapiCapture.close();
+        }
+
+        // Ждём завершения потока копирования
+        if (pipeCopyThread != null) {
+            try {
+                pipeCopyThread.join(1000);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+        }
+
+        // Убиваем процесс ffmpeg
         process.destroyForcibly();
     }
 }

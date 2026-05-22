@@ -3,6 +3,7 @@ package ru.hniApplications.testApplication.codec;
 import ru.hniApplications.testApplication.FFmpegLocator;
 import ru.hniApplications.testApplication.capture.AudioDevice;
 import ru.hniApplications.testApplication.capture.AudioDeviceType;
+import ru.hniApplications.testApplication.codec.wasapi.WasapiDeviceEnumerator;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
@@ -10,16 +11,42 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Утилита для перечисления доступных аудиоустройств через FFmpeg.
+ * Утилита для перечисления доступных аудиоустройств.
+ * Перечисляет:
+ * 1. WASAPI loopback устройства (системный звук) — через JNA
+ * 2. DirectShow устройства (микрофоны) — через ffmpeg
  */
 public class AudioDeviceEnumerator {
 
     /**
      * Возвращает список доступных аудиоустройств.
+     * Сначала перечисляет WASAPI loopback устройства (системный звук),
+     * затем DirectShow устройства (микрофоны).
      *
      * @return список аудиоустройств
      */
     public static List<AudioDevice> list() {
+        List<AudioDevice> result = new ArrayList<>();
+
+        // 1. WASAPI loopback устройства (источники СИСТЕМНОГО звука)
+        try {
+            result.addAll(WasapiDeviceEnumerator.list());
+        } catch (Exception e) {
+            System.err.println("[AudioDeviceEnumerator] WASAPI enum failed: " + e.getMessage());
+        }
+
+        // 2. DirectShow устройства (микрофоны)
+        result.addAll(listDshowDevices());
+
+        return result;
+    }
+
+    /**
+     * Перечисляет DirectShow аудиоустройства через ffmpeg.
+     *
+     * @return список микрофонов
+     */
+    private static List<AudioDevice> listDshowDevices() {
         List<AudioDevice> list = new ArrayList<>();
         String ffmpegPath = FFmpegLocator.getPath();
 
