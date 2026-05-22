@@ -141,10 +141,13 @@ public class WasapiLoopbackCapture implements AutoCloseable {
             Pointer pEnum = enumeratorPtr.getValue();
 
             try {
-                // GetDevice(deviceId)
+                // GetDevice(deviceId) — передаём как LPCWSTR (Pointer)
                 PointerByReference pDev = new PointerByReference();
+                // Создаём LPCWSTR из Java String
+                com.sun.jna.platform.win32.WinNT.LPWSTR lpDeviceId = 
+                        new com.sun.jna.platform.win32.WinNT.LPWSTR(deviceId);
                 // IMMDeviceEnumerator::GetDevice — vtable index 5
-                int rc = ComUtil.callCom(pEnum, 5, deviceId, pDev);
+                int rc = ComUtil.callCom(pEnum, 5, lpDeviceId, pDev);
                 ComUtil.checkHr(rc, "GetDevice(" + deviceId + ")");
                 pDevice = pDev.getValue();
 
