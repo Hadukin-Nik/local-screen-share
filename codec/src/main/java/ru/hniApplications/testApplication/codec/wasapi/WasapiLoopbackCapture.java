@@ -209,11 +209,11 @@ public class WasapiLoopbackCapture implements AutoCloseable {
                 IntByReference numFrames = new IntByReference();
                 rc = ComUtil.callCom(pCaptureClient, 5, numFrames);
                 if (rc != WasapiConstants.S_OK) {
-                    Thread.sleep(5);
+                    Thread.sleep(1);
                     continue;
                 }
                 if (numFrames.getValue() == 0) {
-                    Thread.sleep(5);
+                    Thread.sleep(1);
                     continue;
                 }
 
@@ -226,7 +226,7 @@ public class WasapiLoopbackCapture implements AutoCloseable {
                 rc = ComUtil.callCom(pCaptureClient, 3,
                         pData, framesRead, flags, devicePosition, qpcPosition);
                 if (rc != WasapiConstants.S_OK) {
-                    Thread.sleep(5);
+                    Thread.sleep(1);
                     continue;
                 }
 
