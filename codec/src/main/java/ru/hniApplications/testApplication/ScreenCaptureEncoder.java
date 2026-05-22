@@ -48,9 +48,6 @@ public class ScreenCaptureEncoder implements AutoCloseable {
                     + " ch=" + fmt.channels
                     + " bits=" + fmt.bitsPerSample
                     + " float=" + fmt.isFloat);
-// === ОБЩИЕ ОПЦИИ ===
-// Используем wallclock как PTS — критично для синхронизации двух real-time входов
-            cmd.add("-use_wallclock_as_timestamps"); cmd.add("1");
 
 // === Вход 0: видео (dshow) ===
             cmd.add("-thread_queue_size"); cmd.add("4096");
@@ -61,14 +58,11 @@ public class ScreenCaptureEncoder implements AutoCloseable {
             cmd.add("-i"); cmd.add("video=screen-capture-recorder");
 
 // === Вход 1: аудио (pipe:0) ===
-            cmd.add("-thread_queue_size"); cmd.add("4096");
+            cmd.add("-thread_queue_size"); cmd.add("512");
             cmd.add("-f"); cmd.add(fmt.isFloat ? "f32le" : "s16le");
             cmd.add("-ar"); cmd.add(String.valueOf(fmt.sampleRate));
             cmd.add("-ac"); cmd.add(String.valueOf(fmt.channels));
             cmd.add("-i"); cmd.add("pipe:0");
-
-            cmd.add("-map"); cmd.add("0:v:0");
-            cmd.add("-map"); cmd.add("1:a:0");
 
 
             // map: video из первого входа, audio из второго
@@ -136,16 +130,19 @@ public class ScreenCaptureEncoder implements AutoCloseable {
             final WasapiLoopbackCapture capture = localWasapiCapture;
             final OutputStream stdin = process.getOutputStream();
             pipeCopyThread = new Thread(() -> {
-                try (InputStream audioIn = capture.getOutputStream();
-                     BufferedOutputStream bufOut = new BufferedOutputStream(stdin, 256 * 1024)) {
-                    byte[] buffer = new byte[64 * 1024];
+                long totalBytes = 0;
+                try (InputStream audioIn = capture.getOutputStream()) {
+                    byte[] buffer = new byte[4096];  // мелкий буфер для низкой задержки
                     int n;
                     while ((n = audioIn.read(buffer)) > 0) {
-                        bufOut.write(buffer, 0, n);
-                        bufOut.flush();
+                        stdin.write(buffer, 0, n);
+                        stdin.flush();  // ОБЯЗАТЕЛЬНО flush — иначе stdout буферизуется в OS
+                        totalBytes += n;
                     }
                 } catch (IOException e) {
-                    System.err.println("[ENCODER] Pipe copy thread error: " + e.getMessage());
+                    System.err.println("[AUDIO-PIPE] error after " + (totalBytes / 1024) + "KB: " + e.getMessage());
+                } finally {
+                    try { stdin.close(); } catch (IOException ignored) {}
                 }
             }, "wasapi-pipe-copier");
             pipeCopyThread.setDaemon(true);

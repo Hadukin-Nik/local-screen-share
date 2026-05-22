@@ -50,7 +50,7 @@ public class WasapiLoopbackCapture implements AutoCloseable {
     public void start() {
         try {
             pipedOut = new PipedOutputStream();
-            pipedIn = new PipedInputStream(pipedOut, 1024 * 1024);
+            pipedIn = new PipedInputStream(pipedOut, 64 * 1024);
         } catch (IOException e) {
             throw new RuntimeException("Failed to create pipe", e);
         }

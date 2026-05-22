@@ -6,8 +6,8 @@ import com.sun.jna.platform.win32.Ole32;
 import com.sun.jna.platform.win32.WinNT;
 import com.sun.jna.ptr.IntByReference;
 import com.sun.jna.ptr.PointerByReference;
-import ru.hniApplications.testApplication.AudioDevice;
-import ru.hniApplications.testApplication.AudioDeviceType;
+import ru.hniApplications.testApplication.capture.AudioDevice;
+import ru.hniApplications.testApplication.capture.AudioDeviceType;
 
 import java.util.ArrayList;
 import java.util.List;
