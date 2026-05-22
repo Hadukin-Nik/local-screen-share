@@ -49,18 +49,22 @@ public class ScreenCaptureEncoder implements AutoCloseable {
                     + " bits=" + fmt.bitsPerSample
                     + " float=" + fmt.isFloat);
 
-            // Собираем команду с ДВУМЯ входами: видео + pipe:0
-            // Вход 0: видео (dshow)
+// Вход 0: видео (dshow) — большой буфер, чтобы кадры не дропались,
+// пока ffmpeg ждёт аудио
+            cmd.add("-thread_queue_size"); cmd.add("1024");
+            cmd.add("-rtbufsize"); cmd.add("256M");
             cmd.add("-f"); cmd.add("dshow");
             cmd.add("-framerate"); cmd.add(String.valueOf(fps));
             cmd.add("-video_size"); cmd.add(width + "x" + height);
             cmd.add("-i"); cmd.add("video=screen-capture-recorder");
 
-            // Вход 1: аудио (pipe:0)
+// Вход 1: аудио (pipe:0) — тоже thread_queue, чтобы pipe не стопорил
+            cmd.add("-thread_queue_size"); cmd.add("1024");
             cmd.add("-f"); cmd.add(fmt.isFloat ? "f32le" : "s16le");
             cmd.add("-ar"); cmd.add(String.valueOf(fmt.sampleRate));
             cmd.add("-ac"); cmd.add(String.valueOf(fmt.channels));
             cmd.add("-i"); cmd.add("pipe:0");
+
 
             // map: video из первого входа, audio из второго
             cmd.add("-map"); cmd.add("0:v:0");

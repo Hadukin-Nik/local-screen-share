@@ -174,7 +174,7 @@ public class WasapiLoopbackCapture implements AutoCloseable {
                     + " blockAlign=" + blockAlign);
 
             // 5. Initialize(LOOPBACK)
-            long hnsBufferDuration = 200 * WasapiConstants.REFTIMES_PER_SEC / 1000;
+            long hnsBufferDuration = 40 * WasapiConstants.REFTIMES_PER_SEC / 1000;
             rc = ComUtil.callCom(pAudioClient, 3,
                     WasapiConstants.AUDCLNT_SHAREMODE_SHARED,
                     WasapiConstants.AUDCLNT_STREAMFLAGS_LOOPBACK,
