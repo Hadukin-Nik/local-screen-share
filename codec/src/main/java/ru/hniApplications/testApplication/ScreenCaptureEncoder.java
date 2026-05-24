@@ -30,6 +30,11 @@ public class ScreenCaptureEncoder implements AutoCloseable {
         long t0 = System.currentTimeMillis();
         System.out.println("[ENCODER] T+0ms: start init");
 
+        // Проверка: не висит ли уже какой-то ffmpeg
+        ProcessHandle.allProcesses()
+            .filter(p -> p.info().command().map(c -> c.endsWith("ffmpeg.exe")).orElse(false))
+            .forEach(p -> System.out.println("[Warning] Existing ffmpeg process: PID=" + p.pid()));
+
         List<String> cmd = new ArrayList<>();
 
         cmd.add(FFmpegLocator.getPath());
@@ -127,7 +132,7 @@ public class ScreenCaptureEncoder implements AutoCloseable {
         ProcessBuilder pb = new ProcessBuilder(cmd);
         pb.redirectErrorStream(false);
         this.process = pb.start();
-        System.out.println("[ENCODER] T+" + (System.currentTimeMillis() - t0) + "ms: ffmpeg process started");
+        System.out.println("[ENCODER] T+" + (System.currentTimeMillis() - t0) + "ms: ffmpeg process started, PID=" + process.pid());
 
         this.ffmpegOutput = new BufferedInputStream(process.getInputStream(), 256 * 1024);
 

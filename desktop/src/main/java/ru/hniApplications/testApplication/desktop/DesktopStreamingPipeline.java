@@ -72,6 +72,15 @@ public class DesktopStreamingPipeline {
             throw new IllegalStateException("Pipeline already started");
         }
 
+        // Shutdown hook для защиты от зависших ffmpeg-процессов
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            System.out.println("[Shutdown] Cleaning up...");
+            try {
+                if (encoder != null) encoder.close();
+                if (server != null) server.stop();
+            } catch (Exception ignored) {}
+        }, "pipeline-shutdown-hook"));
+
         server = new RelayServer(port, null, null);
         server.start();
 
