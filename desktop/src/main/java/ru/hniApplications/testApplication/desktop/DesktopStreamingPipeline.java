@@ -52,7 +52,7 @@ public class DesktopStreamingPipeline {
     }
 
     public void detectAudioDevice() {
-        this.audioDevice = AudioDeviceEnumerator.list().getFirst();
+        this.audioDevice = AudioDeviceEnumerator.list().get(0);
     }
 
     public static List<AudioDevice> getAvailableAudioDevices() {
