@@ -27,6 +27,9 @@ public class ScreenCaptureEncoder implements AutoCloseable {
 
     // НОВЫЙ ГЛАВНЫЙ КОНСТРУКТОР С БИТРЕЙТОМ
     public ScreenCaptureEncoder(int fps, int width, int height, AudioDevice device, String videoBitrate) throws IOException {
+        long t0 = System.currentTimeMillis();
+        System.out.println("[ENCODER] T+0ms: start init");
+
         List<String> cmd = new ArrayList<>();
 
         cmd.add(FFmpegLocator.getPath());
@@ -42,6 +45,7 @@ public class ScreenCaptureEncoder implements AutoCloseable {
             String deviceId = device.getFfmpegArg().substring("wasapi-loopback://".length());
             localWasapiCapture = new WasapiLoopbackCapture(deviceId);
             localWasapiCapture.start();
+            System.out.println("[ENCODER] T+" + (System.currentTimeMillis() - t0) + "ms: WASAPI started");
             WasapiLoopbackCapture.Format fmt = localWasapiCapture.getFormat();
 
             System.out.println("[ENCODER] WASAPI loopback: sr=" + fmt.sampleRate
@@ -123,6 +127,7 @@ public class ScreenCaptureEncoder implements AutoCloseable {
         ProcessBuilder pb = new ProcessBuilder(cmd);
         pb.redirectErrorStream(false);
         this.process = pb.start();
+        System.out.println("[ENCODER] T+" + (System.currentTimeMillis() - t0) + "ms: ffmpeg process started");
 
         this.ffmpegOutput = new BufferedInputStream(process.getInputStream(), 256 * 1024);
 
@@ -132,10 +137,16 @@ public class ScreenCaptureEncoder implements AutoCloseable {
             final OutputStream stdin = process.getOutputStream();
             pipeCopyThread = new Thread(() -> {
                 long totalBytes = 0;
+                System.out.println("[ENCODER] T+" + (System.currentTimeMillis() - t0) + "ms: pipe copy thread started");
                 try (InputStream audioIn = capture.getOutputStream()) {
                     byte[] buffer = new byte[4096];  // мелкий буфер для низкой задержки
                     int n;
+                    boolean firstRead = true;
                     while ((n = audioIn.read(buffer)) > 0) {
+                        if (firstRead) {
+                            System.out.println("[ENCODER] T+" + (System.currentTimeMillis() - t0) + "ms: first audio chunk read (" + n + " bytes)");
+                            firstRead = false;
+                        }
                         stdin.write(buffer, 0, n);
                         stdin.flush();  // ОБЯЗАТЕЛЬНО flush — иначе stdout буферизуется в OS
                         totalBytes += n;
