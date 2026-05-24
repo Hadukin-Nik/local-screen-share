@@ -52,13 +52,14 @@ public class ScreenCaptureEncoder implements AutoCloseable {
 // === Вход 0: видео (dshow) ===
             cmd.add("-thread_queue_size"); cmd.add("4096");
             cmd.add("-rtbufsize"); cmd.add("512M");
+            cmd.add("-use_wallclock_as_timestamps"); cmd.add("1");   // ← оставить
             cmd.add("-f"); cmd.add("dshow");
             cmd.add("-framerate"); cmd.add(String.valueOf(fps));
             cmd.add("-video_size"); cmd.add(width + "x" + height);
             cmd.add("-i"); cmd.add("video=screen-capture-recorder");
 
 // === Вход 1: аудио (pipe:0) ===
-            cmd.add("-thread_queue_size"); cmd.add("512");
+            cmd.add("-thread_queue_size"); cmd.add("4096");
             cmd.add("-f"); cmd.add(fmt.isFloat ? "f32le" : "s16le");
             cmd.add("-ar"); cmd.add(String.valueOf(fmt.sampleRate));
             cmd.add("-ac"); cmd.add(String.valueOf(fmt.channels));
