@@ -214,13 +214,33 @@ public class ScreenCaptureEncoder implements AutoCloseable {
         // Ждём завершения потока копирования
         if (pipeCopyThread != null) {
             try {
-                pipeCopyThread.join(1000);
+                pipeCopyThread.join(500);
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
             }
         }
 
         // Убиваем процесс ffmpeg
-        process.destroyForcibly();
+        if (process != null && process.isAlive()) {
+            // Попытка graceful shutdown — ffmpeg реагирует на 'q' в stdin
+            // Но в нашем случае stdin занят аудио-pipe, так что просто destroy
+            process.destroy();   // мягкий signal (CTRL+BREAK на Windows)
+            try {
+                if (!process.waitFor(3, java.util.concurrent.TimeUnit.SECONDS)) {
+                    System.err.println("[ENCODER] ffmpeg did not exit gracefully, forcing");
+                    process.destroyForcibly();
+                    process.waitFor(2, java.util.concurrent.TimeUnit.SECONDS);
+                }
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+
+            // Пауза для освобождения DirectShow устройства Windows-ом
+            try {
+                Thread.sleep(500);
+            } catch (InterruptedException ignored) {}
+
+            System.out.println("[ENCODER] ffmpeg process closed");
+        }
     }
 }
